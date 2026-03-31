@@ -1,29 +1,18 @@
-import { createServerClient } from '@supabase/ssr'
+import seedData from '../../../foods-seed.json'
 import type { FoodItem } from '@/types'
 
+// Filter sugar-name entries (hidden from food lookup UI per PRD §4.4)
+const foods = (seedData.foods as unknown as FoodItem[])
+  .filter((f) => !f.is_sugar_name)
+  .sort((a, b) => a.name.localeCompare(b.name))
+
+// Stable version tag — changes when the entry count changes (sufficient for MVP cache invalidation)
+const DATA_VERSION = `seed-v${seedData.total_entries}`
+
 export async function GET() {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-
-  const { data, error } = await supabase
-    .from('food_items')
-    .select('*')
-    .eq('is_sugar_name', false)
-    .order('name')
-
-  if (error) {
-    console.error('[/api/foods] Supabase error:', error.message)
-    return Response.json({ error: 'Failed to fetch foods' }, { status: 500 })
-  }
-
-  const updatedAt = new Date().toISOString()
-
   return Response.json({
-    foods: data as FoodItem[],
-    total: data.length,
-    updated_at: updatedAt,
+    foods,
+    total: foods.length,
+    updated_at: DATA_VERSION,
   })
 }

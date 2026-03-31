@@ -1,26 +1,25 @@
-import { createServerClient } from '@supabase/ssr'
+import seedData from '../../../../foods-seed.json'
 import type { FoodStatus } from '@/types'
 
-type FoodRow = {
-  week_status: Record<string, FoodStatus>
-  category_override: Record<string, Record<string, FoodStatus>> | null
-  moderation_note: string | null
-}
+type SeedFood = (typeof seedData.foods)[number]
 
-function computeStatus(food: FoodRow, week: number, category: number): FoodStatus {
+// Module-level map: built once per serverless instance, O(1) lookup by id
+const foodMap = new Map(seedData.foods.map((f) => [f.id, f]))
+
+function computeStatus(food: SeedFood, week: number, category: number): FoodStatus {
   const w = String(week)
   const c = String(category)
 
   // Weeks 9 and 10: check category_override first
   if ((week === 9 || week === 10) && food.category_override) {
-    const override = food.category_override[w]
+    const override = (food.category_override as Record<string, Record<string, FoodStatus>>)[w]
     if (override && override[c] !== undefined) {
       return override[c]
     }
   }
 
   // All other weeks, or weeks 9–10 with no override for this item
-  return food.week_status[w]
+  return (food.week_status as Record<string, FoodStatus>)[w]
 }
 
 export async function GET(request: Request) {
@@ -37,19 +36,9 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Invalid parameters' }, { status: 400 })
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
+  const food = foodMap.get(foodId)
 
-  const { data: food, error } = await supabase
-    .from('food_items')
-    .select('week_status, category_override, moderation_note')
-    .eq('id', foodId)
-    .single<FoodRow>()
-
-  if (error || !food) {
+  if (!food) {
     return Response.json({ error: 'Food not found' }, { status: 404 })
   }
 

@@ -48,8 +48,7 @@
 │  PostgreSQL                   Auth                               │
 │  ├── profiles                 ├── email + password               │
 │  ├── cycle_state              ├── Google OAuth                   │
-│  ├── food_items  ◄── seed     └── anonymous / guest              │
-│  └── session_events                                              │
+│  └── session_events           └── anonymous / guest              │
 │                                                                  │
 │  RLS on all tables            Auto-pause after 7 days inactivity │
 │  Food table: public read      Keep-alive: Vercel Cron daily      │
@@ -171,18 +170,17 @@ live-wildfit/
 
 ### 2.1 Schema Design Principles
 
-**Food status storage — JSONB columns on a single table**
+**Food data is not stored in the database**
 
-Store `week_status` and `category_override` as JSONB columns on the `food_items` table rather than as a separate `food_week_status` join table. Reasons:
+`foods-seed.json` (539 entries, project root) is a static file bundled with the app. Both `/api/foods` and `/api/foods/status` read directly from this file at the server layer — no database round-trip. This is correct because:
 
-1. The seed file (`foods-seed.json`) already uses this exact structure. Seeding is a direct upsert with zero transformation — the JSON is written as-is into the JSONB column.
-2. The query pattern is always point-lookup: "give me the status for food X at week Y (and optionally category Z)." JSONB path access (`week_status->>'9'`) on a GIN-indexed column executes in O(1) without a join.
-3. A fully normalised join table (539 items × 12 weeks × up to 3 categories = ~6,500+ rows) adds join overhead and write complexity with no query performance benefit at this data scale.
-4. `category_override` is sparse: only 72 of 539 entries have it. A separate table would have 467 empty foreign key rows. JSONB stores the absence as `null` with no wasted space.
+1. Food data never changes at runtime. It is read-only and only updated via a code deploy.
+2. Importing the JSON at module level costs ~0ms per request (Node.js module cache). A Supabase query adds network latency with no benefit.
+3. The `food_items` Postgres table is therefore unnecessary and is not part of this schema.
 
 **Week 9–10 category split**
 
-The `category_override` JSONB column stores per-category status only for the items and weeks where the status differs from the base `week_status`. Structure: `{"9": {"1": "moderation", "2": "out", "3": "out"}, "10": {...}}`. Status computation checks `category_override` first for weeks 9 and 10; falls back to `week_status` for all other weeks and for items with no override. If the user has not selected a category, default to category `2` (PRD §3.2).
+`category_override` in the seed JSON stores per-category status only for items and weeks where the status differs from the base `week_status`. Structure: `{"9": {"1": "moderation", "2": "out", "3": "out"}, "10": {...}}`. Status computation checks `category_override` first for weeks 9 and 10; falls back to `week_status` for all other weeks and for items with no override. If the user has not selected a category, default to category `2` (PRD §3.2).
 
 **Anonymous user data storage**
 
@@ -190,7 +188,7 @@ Supabase `signInAnonymously()` creates a real row in `auth.users` with a real UU
 
 **Row-level security strategy**
 
-Enable RLS on every table. `food_items` is read-only for all roles, including unauthenticated requests (required by PRD §6.4). All user-specific tables restrict read and write to `auth.uid() = user_id`. Both anonymous and authenticated Supabase sessions carry a valid JWT, so RLS policies work identically for both.
+Enable RLS on every table. All user-specific tables (`profiles`, `cycle_state`, `session_events`) restrict read and write to `auth.uid() = user_id`. Both anonymous and authenticated Supabase sessions carry a valid JWT, so RLS policies work identically for both.
 
 ### 2.2 Full SQL Schema
 
@@ -227,48 +225,6 @@ CREATE TABLE public.cycle_state (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (user_id)
 );
-
--- ============================================================
--- FOOD_ITEMS
--- Canonical food database. Seeded once from foods-seed.json.
--- 539 entries: 467 food items + 72 sugar reference entries.
--- Sugar entries (is_sugar_name = true) are filtered from food
--- lookup UI but included in the hidden sugar names reference.
--- week_status and category_override mirror the seed JSON structure.
--- ============================================================
-CREATE TABLE public.food_items (
-  id                UUID        PRIMARY KEY,
-  name              TEXT        NOT NULL,
-  aliases           TEXT[]      NOT NULL DEFAULT '{}',
-  category          TEXT        NOT NULL
-                                CHECK (category IN (
-                                  'beverages', 'condiments', 'dairy',
-                                  'fruits', 'grains', 'nuts_seeds',
-                                  'other', 'protein', 'vegetables'
-                                )),
-  week_status       JSONB       NOT NULL,
-  -- {"1":"in","2":"in","3":"in",...,"12":"out"}
-  -- Values: "in" | "moderation" | "out" | "never"
-  category_override JSONB,
-  -- {"9":{"1":"moderation","2":"out","3":"out"},"10":{...}}
-  -- NULL for items with no category-specific override in weeks 9–10
-  moderation_note   TEXT,
-  never_friendly    BOOLEAN     NOT NULL DEFAULT FALSE,
-  is_sugar_name     BOOLEAN     NOT NULL DEFAULT FALSE,
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_food_items_name
-  ON public.food_items (name);
-
-CREATE INDEX idx_food_items_category
-  ON public.food_items (category);
-
-CREATE INDEX idx_food_items_aliases
-  ON public.food_items USING GIN (aliases);
-
--- Note: no GIN index on week_status. Status is always fetched by primary key
--- for a single row — a GIN index would add seed write overhead with no read benefit.
 
 -- ============================================================
 -- SESSION_EVENTS
@@ -368,18 +324,6 @@ CREATE POLICY "cycle_state: users delete own"
   USING (auth.uid() = user_id);
 
 -- ============================================================
--- FOOD_ITEMS
--- Public read for all roles including unauthenticated.
--- Required by PRD §6.4: food lookup must work before sign-up.
--- No client writes — food data is seeded server-side only.
--- ============================================================
-ALTER TABLE public.food_items ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "food_items: public read"
-  ON public.food_items FOR SELECT
-  USING (true);
-
--- ============================================================
 -- SESSION_EVENTS
 -- ============================================================
 ALTER TABLE public.session_events ENABLE ROW LEVEL SECURITY;
@@ -393,21 +337,11 @@ CREATE POLICY "session_events: users read own"
   USING (auth.uid() = user_id);
 ```
 
-### 2.4 Database Seed Strategy
+### 2.4 Food Data — Static File, No Seed Required
 
-The food database is seeded from `foods-seed.json` using a Node.js script executed with the service role key.
+`foods-seed.json` at the project root is the canonical food database (539 entries). It is imported directly by the API routes at the Node.js module level — no database seed, no Supabase round-trip.
 
-**Seed command:**
-```bash
-pnpm seed:foods
-```
-
-This runs `scripts/seed-foods.ts`, which:
-1. Reads `foods-seed.json`
-2. Extracts the `foods` array (539 items)
-3. Upserts all rows into `public.food_items` using `onConflict: 'id'` — equivalent to `ON CONFLICT (id) DO UPDATE SET ...`
-
-**The seed is idempotent.** Re-running it at any time is safe: existing rows are updated if the source data changed (e.g., a corrected `moderation_note`), and new rows are inserted. This makes it safe to run in any environment setup, not just once at project init. Run it whenever `foods-seed.json` is updated.
+To update food data: edit `foods-seed.json` and redeploy. The new data is live on the next deployment. No migration or seed command is needed.
 
 ---
 
@@ -625,31 +559,28 @@ Food status is always computed server-side (PRD §4.4, §6.3). The client never 
 
 ```typescript
 // app/api/foods/status/route.ts
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import seedData from '../../../foods-seed.json'
+import type { FoodStatus } from '@/types'
 
-type StatusValue = 'in' | 'moderation' | 'out' | 'never'
+type SeedFood = (typeof seedData.foods)[number]
 
-type FoodRow = {
-  week_status: Record<string, StatusValue>
-  category_override: Record<string, Record<string, StatusValue>> | null
-  moderation_note: string | null
-}
+// Module-level map: built once per serverless instance, O(1) lookup by id
+const foodMap = new Map(seedData.foods.map((f) => [f.id, f]))
 
-function computeStatus(food: FoodRow, week: number, category: number): StatusValue {
+function computeStatus(food: SeedFood, week: number, category: number): FoodStatus {
   const w = String(week)
   const c = String(category)
 
   // Weeks 9 and 10: check category_override first
   if ((week === 9 || week === 10) && food.category_override) {
-    const override = food.category_override[w]
+    const override = (food.category_override as Record<string, Record<string, FoodStatus>>)[w]
     if (override && override[c] !== undefined) {
       return override[c]
     }
   }
 
   // All other weeks, or weeks 9–10 with no override for this item
-  return food.week_status[w]
+  return (food.week_status as Record<string, FoodStatus>)[w]
 }
 
 export async function GET(request: Request) {
@@ -666,25 +597,9 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Invalid parameters' }, { status: 400 })
   }
 
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: () => {}, // read-only route; no session writes needed
-      },
-    }
-  )
+  const food = foodMap.get(foodId)
 
-  const { data: food, error } = await supabase
-    .from('food_items')
-    .select('week_status, category_override, moderation_note')
-    .eq('id', foodId)
-    .single<FoodRow>()
-
-  if (error || !food) {
+  if (!food) {
     return Response.json({ error: 'Food not found' }, { status: 404 })
   }
 

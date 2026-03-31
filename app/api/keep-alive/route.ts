@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   )
 
   const { error } = await supabase
-    .from('food_items')
+    .from('profiles')
     .select('id')
     .limit(1)
 
