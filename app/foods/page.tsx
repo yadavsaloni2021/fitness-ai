@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import React, { useEffect, useState } from 'react'
 import { FoodList } from '@/components/foods/FoodList'
 import { FoodSearch } from '@/components/foods/FoodSearch'
