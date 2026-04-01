@@ -15,6 +15,7 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
@@ -22,6 +23,12 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!termsAccepted) {
+      setError('Please accept the Terms and Privacy Policy to continue.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -56,6 +63,12 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
 
   const handleGoogleSignIn = async () => {
     setError(null)
+
+    if (!termsAccepted) {
+      setError('Please accept the Terms and Privacy Policy to continue.')
+      return
+    }
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -136,6 +149,16 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
             required
             minLength={8}
           />
+          <label htmlFor="terms-checkbox" className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+            <input
+              id="terms-checkbox"
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={e => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[var(--border-subtle)] text-[var(--accent-400)] focus:ring-[var(--focus-ring)]"
+            />
+            <span>I agree to the Terms and Privacy Policy.</span>
+          </label>
 
           {error && (
             <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
