@@ -22,6 +22,10 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
 
   const handleJumpRequest = () => {
     if (targetWeek === cycleState.current_week) return
+    if (!proposedStartDate) {
+      setError('Unable to calculate the new cycle date. Please try again.')
+      return
+    }
     setDialogOpen(true)
   }
 
@@ -50,10 +54,20 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
     }
   }
 
-  const proposedDateFormatted = new Date(proposedStartDate + 'T00:00:00').toLocaleDateString(
-    'en-US',
-    { weekday: 'long', month: 'long', day: 'numeric' }
-  )
+  function formatDate(dateStr: string, options: Intl.DateTimeFormatOptions): string {
+    try {
+      const d = new Date(dateStr + 'T00:00:00')
+      if (isNaN(d.getTime())) return dateStr
+      return d.toLocaleDateString('en-US', options)
+    } catch {
+      return dateStr
+    }
+  }
+
+  const startDateFormatted = formatDate(cycleState.start_date, { month: 'long', day: 'numeric', year: 'numeric' })
+  const proposedDateFormatted = proposedStartDate
+    ? formatDate(proposedStartDate, { weekday: 'long', month: 'long', day: 'numeric' })
+    : ''
 
   return (
     <section className="space-y-4">
@@ -63,7 +77,7 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
         {/* Current state */}
         <div className="text-sm text-[var(--text-muted)]">
           <p>Currently on <strong className="text-[var(--text-primary)]">Week {cycleState.computed_week}</strong></p>
-          <p>Started: {new Date(cycleState.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+          <p>Started: {startDateFormatted}</p>
         </div>
 
         {/* Season jump */}

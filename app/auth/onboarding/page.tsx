@@ -90,6 +90,8 @@ export default function OnboardingPage() {
         ? seasonJumpStartDate(data.startingWeek, 'UTC')
         : data.startDate
 
+      if (!startDate) throw new Error('Failed to calculate start date')
+
       // Save cycle state
       const res = await fetch('/api/cycle', {
         method: 'PUT',

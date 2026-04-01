@@ -72,22 +72,37 @@ export function isCycleFuture(cycleDay: number): boolean {
  * Aligns to the most recent Monday in the user's timezone,
  * then subtracts (targetWeek - 1) * 7 days so that "this week"
  * is exactly targetWeek.
+ *
+ * Returns null if the inputs are invalid or the date cannot be computed.
  */
-export function seasonJumpStartDate(targetWeek: number, userTimezone: string): string {
-  const todayStr = todayInTimezone(userTimezone)
-  const today = parseDate(todayStr)
-  const dayOfWeek = today.getUTCDay() // 0 = Sunday
-  const daysSinceMonday = (dayOfWeek + 6) % 7
+export function seasonJumpStartDate(targetWeek: number, userTimezone: string): string | null {
+  if (!Number.isFinite(targetWeek) || targetWeek < 1 || targetWeek > 12) {
+    return null
+  }
 
-  // Most recent Monday
-  const thisMonday = new Date(today)
-  thisMonday.setUTCDate(today.getUTCDate() - daysSinceMonday)
+  try {
+    const todayStr = todayInTimezone(userTimezone)
+    const today = parseDate(todayStr)
 
-  // start_date = thisMonday - ((targetWeek - 1) * 7) days
-  const start = new Date(thisMonday)
-  start.setUTCDate(thisMonday.getUTCDate() - (targetWeek - 1) * 7)
+    if (isNaN(today.getTime())) return null
 
-  return start.toISOString().split('T')[0]
+    const dayOfWeek = today.getUTCDay() // 0 = Sunday
+    const daysSinceMonday = (dayOfWeek + 6) % 7
+
+    // Most recent Monday
+    const thisMonday = new Date(today)
+    thisMonday.setUTCDate(today.getUTCDate() - daysSinceMonday)
+
+    // start_date = thisMonday - ((targetWeek - 1) * 7) days
+    const start = new Date(thisMonday)
+    start.setUTCDate(thisMonday.getUTCDate() - (targetWeek - 1) * 7)
+
+    if (isNaN(start.getTime())) return null
+
+    return start.toISOString().split('T')[0]
+  } catch {
+    return null
+  }
 }
 
 /**
