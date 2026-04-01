@@ -139,6 +139,28 @@ export function getSeasonLabel(week: number): string {
 }
 
 /**
+ * Get the number of days until the next season change or end of cycle,
+ * and the name of what comes next.
+ *
+ * Season boundaries (by cycle day):
+ *   Fall   = Days  1–21  → Winter starts Day 22
+ *   Winter = Days 22–42  → Spring starts Day 43
+ *   Spring = Days 43–84  → End of cycle
+ */
+export function getDaysUntilNextSeason(cycleDay: number): { days: number; label: string } {
+  if (cycleDay <= 21) {
+    // Days remaining in Fall before Winter (exclusive of today and season-start day)
+    return { days: Math.max(0, 21 - cycleDay), label: 'Winter' }
+  }
+  if (cycleDay <= 42) {
+    // Days remaining in Winter before Spring
+    return { days: Math.max(0, 42 - cycleDay), label: 'Spring' }
+  }
+  // Days remaining in Spring until end of cycle
+  return { days: Math.max(0, 84 - cycleDay), label: 'end of cycle' }
+}
+
+/**
  * Get the phase label for a given week number.
  */
 export function getPhaseLabel(week: number): string {
