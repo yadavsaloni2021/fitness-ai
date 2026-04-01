@@ -77,6 +77,7 @@ export function isCycleFuture(cycleDay: number): boolean {
  */
 export function seasonJumpStartDate(targetWeek: number, userTimezone: string): string | null {
   if (!Number.isFinite(targetWeek) || targetWeek < 1 || targetWeek > 12) {
+    console.error('[seasonJumpStartDate] invalid targetWeek:', targetWeek)
     return null
   }
 
@@ -100,7 +101,8 @@ export function seasonJumpStartDate(targetWeek: number, userTimezone: string): s
     if (isNaN(start.getTime())) return null
 
     return start.toISOString().split('T')[0]
-  } catch {
+  } catch (err) {
+    console.error('[seasonJumpStartDate] date computation failed:', err)
     return null
   }
 }
