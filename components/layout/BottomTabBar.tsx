@@ -45,7 +45,7 @@ const tabs = [
   },
   {
     href: '/weeks/1',
-    label: 'Guide',
+    label: 'Weeks',
     icon: (active: boolean) => (
       <svg
         width="24"
