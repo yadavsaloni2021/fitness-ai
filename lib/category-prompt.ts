@@ -3,12 +3,16 @@ const DISMISSED_SESSION_KEY = 'lw:category-prompt:dismissed-session'
 
 function getTodayLocalDate(timezone?: string): string {
   if (timezone) {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date())
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date())
+    } catch {
+      // Fall back to the local date when the supplied timezone is invalid.
+    }
   }
 
   const now = new Date()
