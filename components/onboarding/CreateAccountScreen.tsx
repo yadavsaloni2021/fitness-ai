@@ -34,30 +34,34 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
       })
 
       if (signUpError) {
+        console.error('Email sign-up failed:', signUpError)
         setError(signUpError.message)
         return
       }
 
-      if (!data.session) {
-        setError('Account created, but sign-in failed. Please sign in to continue.')
+      if (!data.user) {
+        setError('We could not create your account. Please try again.')
         return
       }
 
-      if (data.user) {
-        // Upsert profile
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: data.user.id,
-          display_name: name || null,
-        })
-
-        if (profileError) {
-          setError('We could not finish creating your profile. Please try again.')
-          console.error('Profile upsert failed:', profileError)
-          return
-        }
-
-        onSuccess()
+      if (!data.session) {
+        setError('Account created, but session setup failed. Please sign in with your new account.')
+        return
       }
+
+      // Upsert profile
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: data.user.id,
+        display_name: name || null,
+      })
+
+      if (profileError) {
+        setError('Your account was created, but profile setup failed. Please sign in to continue onboarding.')
+        console.error('Profile upsert failed:', profileError)
+        return
+      }
+
+      onSuccess()
     } catch (err) {
       setError('Something went wrong. Please try again.')
       console.error(err)
