@@ -44,21 +44,33 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
         return
       }
 
-      if (!data.session) {
-        setError('Account created, but session setup failed. Please sign in with your new account.')
-        return
+      let hasSession = Boolean(data.session)
+
+      if (!hasSession) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (signInError) {
+          console.error('Session recovery sign-in failed:', signInError)
+          setError('Account created. Please verify your email, then sign in to continue.')
+          return
+        }
+
+        hasSession = true
       }
 
-      // Upsert profile
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: data.user.id,
-        display_name: name || null,
-      })
+      if (hasSession) {
+        // Upsert profile
+        const { error: profileError } = await supabase.from('profiles').upsert({
+          id: data.user.id,
+          display_name: name || null,
+        })
 
-      if (profileError) {
-        setError('Your account was created, but profile setup failed. Please sign in to continue onboarding.')
-        console.error('Profile upsert failed:', profileError)
-        return
+        if (profileError) {
+          console.error('Profile upsert failed (continuing onboarding):', profileError)
+        }
       }
 
       onSuccess()
