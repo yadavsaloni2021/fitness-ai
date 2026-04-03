@@ -38,12 +38,24 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
         return
       }
 
+      if (!data.session) {
+        setError('Account created, but sign-in failed. Please sign in to continue.')
+        return
+      }
+
       if (data.user) {
         // Upsert profile
-        await supabase.from('profiles').upsert({
+        const { error: profileError } = await supabase.from('profiles').upsert({
           id: data.user.id,
           display_name: name || null,
         })
+
+        if (profileError) {
+          setError('We could not finish creating your profile. Please try again.')
+          console.error('Profile upsert failed:', profileError)
+          return
+        }
+
         onSuccess()
       }
     } catch (err) {
