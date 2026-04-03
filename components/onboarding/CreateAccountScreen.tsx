@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { createClient } from '@/lib/supabase/client'
 
+const TERMS_ACCEPTANCE_ERROR = 'Please accept the Terms and Privacy Policy to continue.'
+
 interface CreateAccountScreenProps {
   onSuccess: () => void
   onSkip: () => void
@@ -25,7 +27,7 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
     setError(null)
 
     if (!termsAccepted) {
-      setError('Please accept the Terms and Privacy Policy to continue.')
+      setError(TERMS_ACCEPTANCE_ERROR)
       return
     }
 
@@ -65,7 +67,7 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
     setError(null)
 
     if (!termsAccepted) {
-      setError('Please accept the Terms and Privacy Policy to continue.')
+      setError(TERMS_ACCEPTANCE_ERROR)
       return
     }
 
@@ -117,6 +119,10 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
           Continue with Google
         </Button>
 
+        {error && (
+          <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
+        )}
+
         <div className="flex items-center gap-3">
           <div className="flex-1 border-t border-[var(--border-subtle)]" />
           <span className="text-xs text-[var(--text-muted)]">or</span>
@@ -159,10 +165,6 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
             />
             <span>I agree to the Terms and Privacy Policy.</span>
           </label>
-
-          {error && (
-            <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
-          )}
 
           <Button
             type="submit"
