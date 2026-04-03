@@ -155,7 +155,7 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
               type="checkbox"
               checked={termsAccepted}
               onChange={e => setTermsAccepted(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-[var(--border-subtle)] text-[var(--accent-400)] focus:ring-[var(--focus-ring)]"
+              className="mt-0.5 h-4 w-4 rounded border-[var(--border-subtle)] text-[var(--accent-400)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
             />
             <span>I agree to the Terms and Privacy Policy.</span>
           </label>
