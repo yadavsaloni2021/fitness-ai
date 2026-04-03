@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ProfileSection } from '@/components/settings/ProfileSection'
 import { CycleSection } from '@/components/settings/CycleSection'
+import { CategorySection } from '@/components/settings/CategorySection'
 import { AppearanceSection } from '@/components/settings/AppearanceSection'
 import { AccountSection } from '@/components/settings/AccountSection'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -130,6 +131,14 @@ export default function SettingsPage() {
         <CycleSection
           cycleState={cycleData}
           timezone={timezone}
+          onUpdate={loadData}
+        />
+      )}
+
+      {/* Category (Weeks 9-10 only) */}
+      {cycleData?.configured && (cycleData.computed_week === 9 || cycleData.computed_week === 10) && (
+        <CategorySection
+          cycleState={cycleData}
           onUpdate={loadData}
         />
       )}
