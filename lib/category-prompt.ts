@@ -32,17 +32,27 @@ export function shouldShowCategoryPrompt(
   if (category !== null) return false
 
   const today = getTodayLocalDate(timezone)
-  const dismissedDate = window.localStorage.getItem(DISMISSED_DATE_KEY)
-  const dismissedSession = window.sessionStorage.getItem(DISMISSED_SESSION_KEY) === '1'
 
-  if (dismissedDate === today) return false
-  if (dismissedSession) return false
-  return true
+  try {
+    const dismissedDate = window.localStorage.getItem(DISMISSED_DATE_KEY)
+    const dismissedSession = window.sessionStorage.getItem(DISMISSED_SESSION_KEY) === '1'
+
+    if (dismissedDate === today) return false
+    if (dismissedSession) return false
+    return true
+  } catch {
+    return true
+  }
 }
 
 export function dismissCategoryPrompt(timezone?: string): void {
   if (typeof window === 'undefined') return
   const today = getTodayLocalDate(timezone)
-  window.localStorage.setItem(DISMISSED_DATE_KEY, today)
-  window.sessionStorage.setItem(DISMISSED_SESSION_KEY, '1')
+
+  try {
+    window.localStorage.setItem(DISMISSED_DATE_KEY, today)
+    window.sessionStorage.setItem(DISMISSED_SESSION_KEY, '1')
+  } catch {
+    // Ignore storage failures so the page does not break in restricted environments.
+  }
 }
