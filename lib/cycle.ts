@@ -85,7 +85,10 @@ export function seasonJumpStartDate(targetWeek: number, userTimezone: string): s
     const todayStr = todayInTimezone(userTimezone)
     const today = parseDate(todayStr)
 
-    if (isNaN(today.getTime())) return null
+    if (isNaN(today.getTime())) {
+      console.error('[seasonJumpStartDate] invalid today date for timezone:', userTimezone)
+      return null
+    }
 
     const dayOfWeek = today.getUTCDay() // 0 = Sunday
     const daysSinceMonday = (dayOfWeek + 6) % 7
@@ -98,7 +101,10 @@ export function seasonJumpStartDate(targetWeek: number, userTimezone: string): s
     const start = new Date(thisMonday)
     start.setUTCDate(thisMonday.getUTCDate() - (targetWeek - 1) * 7)
 
-    if (isNaN(start.getTime())) return null
+    if (isNaN(start.getTime())) {
+      console.error('[seasonJumpStartDate] invalid start date for week:', targetWeek, 'timezone:', userTimezone)
+      return null
+    }
 
     return start.toISOString().split('T')[0]
   } catch (err) {
