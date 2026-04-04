@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { createClient } from '@/lib/supabase/client'
 
+const TERMS_ACCEPTANCE_ERROR = 'Please accept the Terms and Privacy Policy to continue.'
+
 interface CreateAccountScreenProps {
   onSuccess: () => void
   onSkip: () => void
@@ -15,6 +17,7 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingConfirmation, setPendingConfirmation] = useState(false)
@@ -23,6 +26,12 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!termsAccepted) {
+      setError(TERMS_ACCEPTANCE_ERROR)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -62,6 +71,12 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
 
   const handleGoogleSignIn = async () => {
     setError(null)
+
+    if (!termsAccepted) {
+      setError(TERMS_ACCEPTANCE_ERROR)
+      return
+    }
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -135,6 +150,10 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
           Continue with Google
         </Button>
 
+        {error && (
+          <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
+        )}
+
         <div className="flex items-center gap-3">
           <div className="flex-1 border-t border-[var(--border-subtle)]" />
           <span className="text-xs text-[var(--text-muted)]">or</span>
@@ -167,10 +186,16 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
             required
             minLength={8}
           />
-
-          {error && (
-            <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
-          )}
+          <label htmlFor="terms-checkbox" className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+            <input
+              id="terms-checkbox"
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={e => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[var(--border-subtle)] text-[var(--accent-400)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+            />
+            <span>I agree to the Terms and Privacy Policy.</span>
+          </label>
 
           <Button
             type="submit"
