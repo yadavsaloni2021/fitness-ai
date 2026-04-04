@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { seasonJumpStartDate } from '@/lib/cycle'
@@ -18,9 +18,18 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const proposedStartDate = seasonJumpStartDate(targetWeek, timezone)
+  const proposedStartDate = useMemo(
+    () => seasonJumpStartDate(targetWeek, timezone),
+    [targetWeek, timezone]
+  )
+
+  const handleWeekChange = (week: number) => {
+    setTargetWeek(week)
+    setError(null)
+  }
 
   const handleJumpRequest = () => {
+    setError(null)
     if (targetWeek === cycleState.current_week) return
     if (!proposedStartDate) {
       setError('Unable to calculate the new cycle date. Please try again.')
@@ -88,7 +97,7 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
           <div className="flex gap-2">
             <select
               value={targetWeek}
-              onChange={e => setTargetWeek(parseInt(e.target.value, 10))}
+              onChange={e => handleWeekChange(parseInt(e.target.value, 10))}
               className="flex-1 rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map(w => (
