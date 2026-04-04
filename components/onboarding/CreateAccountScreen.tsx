@@ -17,6 +17,7 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingConfirmation, setPendingConfirmation] = useState(false)
   const supabase = createClient()
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -38,12 +39,17 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
         return
       }
 
-      if (data.user) {
-        // Upsert profile
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          display_name: name || null,
-        })
+      if (data.user && !data.session) {
+        // Email confirmation is required — profile is created by DB trigger.
+        // Show a holding screen; the confirmation link will redirect to /auth/callback
+        // which establishes the session and sends the user to /.
+        setPendingConfirmation(true)
+        return
+      }
+
+      // Email confirmations disabled — session is live immediately.
+      // Profile was created by DB trigger; proceed to cycle setup.
+      if (data.user && data.session) {
         onSuccess()
       }
     } catch (err) {
@@ -64,6 +70,31 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
     if (oauthError) {
       setError(oauthError.message)
     }
+  }
+
+  if (pendingConfirmation) {
+    return (
+      <div className="flex flex-col min-h-screen items-center justify-center px-6 py-8">
+        <div className="max-w-sm w-full text-center space-y-4">
+          <span className="text-4xl" role="img" aria-label="Email">📬</span>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Check your inbox</h1>
+          <p className="text-sm text-[var(--text-muted)]">
+            We sent a confirmation link to <strong>{email}</strong>.
+            Click it to activate your account — your cycle setup will be waiting here when you return.
+          </p>
+          <p className="text-xs text-[var(--text-muted)]">
+            Didn&apos;t get it? Check your spam folder, or{' '}
+            <button
+              className="underline hover:text-[var(--text-secondary)]"
+              onClick={() => setPendingConfirmation(false)}
+            >
+              go back and try again
+            </button>
+            .
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

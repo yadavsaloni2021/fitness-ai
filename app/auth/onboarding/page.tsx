@@ -82,9 +82,6 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No user session')
 
-      // Upsert profile with display name if any
-      await supabase.from('profiles').upsert({ id: user.id })
-
       // Compute start_date aligned to clean week boundary if starting mid-cycle
       const startDate = data.startingWeek > 1
         ? seasonJumpStartDate(data.startingWeek, 'UTC')
