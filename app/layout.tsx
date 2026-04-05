@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   title: 'Live WildFit',
   description: 'Your WILDFIT® cycle companion — instant food lookup for every week.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/icons/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -32,9 +36,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-      </head>
       <body className="min-h-screen flex flex-col">
         <TopNav />
         <main className="flex-1 pb-16 md:pb-0">
