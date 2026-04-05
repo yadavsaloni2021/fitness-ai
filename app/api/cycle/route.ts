@@ -106,8 +106,12 @@ export async function PUT(request: Request) {
 
   if (current_week !== undefined && current_week >= 1 && current_week <= 12) {
     // Season jump: recalculate start_date
+    const jumpDate = seasonJumpStartDate(current_week, timezone)
+    if (!jumpDate) {
+      return Response.json({ error: 'Failed to calculate cycle date' }, { status: 400 })
+    }
     updatePayload.current_week = current_week
-    updatePayload.start_date = seasonJumpStartDate(current_week, timezone)
+    updatePayload.start_date = jumpDate
   } else if (start_date) {
     updatePayload.start_date = start_date
   }
