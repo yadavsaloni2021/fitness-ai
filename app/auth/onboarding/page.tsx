@@ -103,7 +103,8 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error('Failed to save cycle')
 
       logSessionEvent('onboarding', data.startingWeek)
-      router.push('/')
+      setSavingCycle(false)
+      window.location.replace('/')
     } catch (err) {
       console.error('Failed to save cycle:', err)
       setSavingCycle(false)
