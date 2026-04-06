@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { seasonJumpStartDate } from '@/lib/cycle'
 
 interface YourCycleScreenProps {
   onComplete: (data: {
@@ -97,6 +98,13 @@ export function YourCycleScreen({ onComplete, onBack, loading }: YourCycleScreen
                 setStartingWeek(w)
                 // Reset category if leaving weeks 9–10
                 if (w !== 9 && w !== 10) setCategory(null)
+                // Auto-adjust start date per helper text
+                if (w === 1) {
+                  setStartDate(today)
+                } else {
+                  const computed = seasonJumpStartDate(w, 'UTC')
+                  if (computed) setStartDate(computed)
+                }
               }}
               className="w-full rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
             >
