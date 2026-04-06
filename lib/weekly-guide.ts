@@ -25,6 +25,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Sugar Vacation Begins',
     what_changed: 'Refined sugar removed; fruit and Alkagizer Mild added',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Take a vacation from all added and refined sugar',
       'Have 2–3 pieces of fruit on an empty stomach each morning (30 min before other food)',
       'Start the Alkagizer Mild daily',
@@ -37,6 +38,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Sugar Awareness',
     what_changed: 'No new removals — deepen sugar awareness',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Continue your vacation from refined sugar',
       'Learn to identify the 65+ hidden names of sugar on ingredient labels',
       'Avocado, tomato, olives, dabai, and lemon/lime are always available',
@@ -49,6 +51,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Grain & Dairy Exit',
     what_changed: 'All grains and dairy removed this week',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Step away from all grains: bread, pasta, rice, oats, and all cereal grains',
       'Take a break from all dairy (cow, goat, sheep milk products)',
       'Dairy alternatives allowed: almond milk, hemp milk, coconut milk — oat and rice milk are out',
@@ -61,6 +64,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Full Detox Entry',
     what_changed: 'Food additives, alcohol, caffeine, and nicotine removed',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Take a break from all food additives, alcohol, caffeine, and nicotine',
       'Expect 1–5 days of mild adjustment if you consume caffeine — this is normal and will pass',
       'Continue 6–8 glasses of water daily',
@@ -73,6 +77,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Deep Winter',
     what_changed: 'No new removals — hold and deepen',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Hold all current guidelines — this is your deepest detox week',
       'Prioritize sleep and stress reduction',
       'Continue the Alkagizer Mild daily',
@@ -85,6 +90,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Spring Begins',
     what_changed: 'Spring food list begins; water increases to 12 glasses; Alkagizer Prime starts',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Increase water to 12 glasses daily',
       'Maximize vegetable variety at every meal',
       'Lean quality protein: wild-caught fish preferred, then organic/pastured',
@@ -98,9 +104,9 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Deep Spring',
     what_changed: 'No new changes — maintain Spring guidelines',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Continue all Spring guidelines with consistency',
       'Continue 12 glasses of water daily',
-      'Maintain the 5-5-5-5 breathing exercise daily',
       'Keep Alkagizer Prime daily — vary the greens you use',
     ],
   },
@@ -110,6 +116,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Spring — Category Split',
     what_changed: 'Category 1 users may begin reintroducing less-sweet fruit',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Category 1: Begin adding small amounts of less-sweet fruits (berries, citrus, guava)',
       'Categories 2 & 3: Continue deep Spring guidelines — stay the course',
       'Fruit (if reintroducing) is consumed in the morning on an empty stomach only',
@@ -122,6 +129,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Spring Continuation',
     what_changed: 'Category 1 adds more fruit; Categories 2 & 3 hold — final Spring week',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Category 1: Continue adding berries and low-glycemic fruit slowly',
       'Categories 2 & 3: This is your final full week of deep Spring — finish strong',
       'Continue Alkagizer Prime daily',
@@ -134,6 +142,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Coming Out of Spring',
     what_changed: 'Root vegetables and low-glycemic fruit reintroduced for all categories',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'All categories: gradually add root vegetables (except white potato) and berries',
       'Add new foods slowly — one at a time — and observe how you feel',
       'Move back to 8–10 glasses of water daily',
@@ -146,6 +155,7 @@ export const weeklyGuide: WeekGuide[] = [
     phase: 'Spring Reset Preparation',
     what_changed: 'Sweet foods removed again to prepare body for Spring state',
     focus: [
+      'Maintain 5-5-5-5 breathing exercise twice daily',
       'Steer clear of fruits, sweet vegetables, beans, and honey this week',
       'Avoid sweet-tasting foods to signal the body back into Spring state',
       'Increase water back to 12 glasses daily',

@@ -16,7 +16,8 @@ type OnboardingStep = 'welcome' | 'create-account' | 'your-cycle'
 export default function OnboardingPage() {
   const router = useRouter()
   const supabase = createClient()
-  const [step, setStep] = useState<OnboardingStep>('welcome')
+  // null = session check in progress; avoids flashing Welcome screen on OAuth return
+  const [step, setStep] = useState<OnboardingStep | null>(null)
   const [savingCycle, setSavingCycle] = useState(false)
 
   useEffect(() => {
@@ -38,6 +39,8 @@ export default function OnboardingPage() {
       }
       // Has session but no cycle — go to cycle setup
       setStep('your-cycle')
+    } else {
+      setStep('welcome')
     }
   }
 
@@ -109,6 +112,10 @@ export default function OnboardingPage() {
       console.error('Failed to save cycle:', err)
       setSavingCycle(false)
     }
+  }
+
+  if (step === null) {
+    return <div className="min-h-screen bg-[var(--bg-base)]" />
   }
 
   return (
