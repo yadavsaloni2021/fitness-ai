@@ -1,4 +1,5 @@
 import React from 'react'
+import { getDaysUntilNextSeason } from '@/lib/cycle'
 
 interface DayCounterProps {
   cycleDay: number
@@ -56,7 +57,10 @@ export function DayCounter({
         Day {displayDay} of 84 · Week {week} of 12
       </p>
       <p className="text-sm text-[var(--text-muted)]">
-        {daysRemaining} day{daysRemaining !== 1 ? 's' : ''} remaining
+        {(() => {
+          const { days, label } = getDaysUntilNextSeason(cycleDay)
+          return `${days} day${days !== 1 ? 's' : ''} until ${label}`
+        })()}
       </p>
     </div>
   )
