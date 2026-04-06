@@ -82,13 +82,12 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No user session')
 
-      // Upsert profile with display name if any
-      await supabase.from('profiles').upsert({ id: user.id })
-
       // Compute start_date aligned to clean week boundary if starting mid-cycle
       const startDate = data.startingWeek > 1
         ? seasonJumpStartDate(data.startingWeek, 'UTC')
         : data.startDate
+
+      if (!startDate) throw new Error('Failed to calculate start date')
 
       // Save cycle state
       const res = await fetch('/api/cycle', {
@@ -104,7 +103,8 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error('Failed to save cycle')
 
       logSessionEvent('onboarding', data.startingWeek)
-      router.push('/')
+      setSavingCycle(false)
+      window.location.replace('/')
     } catch (err) {
       console.error('Failed to save cycle:', err)
       setSavingCycle(false)

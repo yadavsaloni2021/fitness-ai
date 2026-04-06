@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { createClient } from '@/lib/supabase/client'
 
+const TERMS_ACCEPTANCE_ERROR = 'Please accept the Terms and Privacy Policy to continue.'
+
 interface CreateAccountScreenProps {
   onSuccess: () => void
   onSkip: () => void
@@ -15,13 +17,21 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pendingConfirmation, setPendingConfirmation] = useState(false)
   const supabase = createClient()
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!termsAccepted) {
+      setError(TERMS_ACCEPTANCE_ERROR)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -38,12 +48,17 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
         return
       }
 
-      if (data.user) {
-        // Upsert profile
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          display_name: name || null,
-        })
+      if (data.user && !data.session) {
+        // Email confirmation is required — profile is created by DB trigger.
+        // Show a holding screen; the confirmation link will redirect to /auth/callback
+        // which establishes the session and sends the user to /.
+        setPendingConfirmation(true)
+        return
+      }
+
+      // Email confirmations disabled — session is live immediately.
+      // Profile was created by DB trigger; proceed to cycle setup.
+      if (data.user && data.session) {
         onSuccess()
       }
     } catch (err) {
@@ -56,6 +71,12 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
 
   const handleGoogleSignIn = async () => {
     setError(null)
+
+    if (!termsAccepted) {
+      setError(TERMS_ACCEPTANCE_ERROR)
+      return
+    }
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -64,6 +85,31 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
     if (oauthError) {
       setError(oauthError.message)
     }
+  }
+
+  if (pendingConfirmation) {
+    return (
+      <div className="flex flex-col min-h-screen items-center justify-center px-6 py-8">
+        <div className="max-w-sm w-full text-center space-y-4">
+          <span className="text-4xl" role="img" aria-label="Email">📬</span>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Check your inbox</h1>
+          <p className="text-sm text-[var(--text-muted)]">
+            We sent a confirmation link to <strong>{email}</strong>.
+            Click it to activate your account — your cycle setup will be waiting here when you return.
+          </p>
+          <p className="text-xs text-[var(--text-muted)]">
+            Didn&apos;t get it? Check your spam folder, or{' '}
+            <button
+              className="underline hover:text-[var(--text-secondary)]"
+              onClick={() => setPendingConfirmation(false)}
+            >
+              go back and try again
+            </button>
+            .
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -104,6 +150,10 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
           Continue with Google
         </Button>
 
+        {error && (
+          <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
+        )}
+
         <div className="flex items-center gap-3">
           <div className="flex-1 border-t border-[var(--border-subtle)]" />
           <span className="text-xs text-[var(--text-muted)]">or</span>
@@ -136,10 +186,16 @@ export function CreateAccountScreen({ onSuccess, onSkip, onBack }: CreateAccount
             required
             minLength={8}
           />
-
-          {error && (
-            <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
-          )}
+          <label htmlFor="terms-checkbox" className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+            <input
+              id="terms-checkbox"
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={e => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[var(--border-subtle)] text-[var(--accent-400)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+            />
+            <span>I agree to the Terms and Privacy Policy.</span>
+          </label>
 
           <Button
             type="submit"
