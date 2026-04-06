@@ -54,10 +54,15 @@ export default function SettingsPage() {
 
       if (profileRes.data) {
         setProfile(profileRes.data as Profile)
-        // Apply saved theme
+        // Restore theme from DB only when localStorage has no stored preference
+        // (avoids overriding the current session theme set by the inline init script)
         const theme = (profileRes.data as Profile).theme
-        if (theme && theme !== 'system') {
-          document.documentElement.setAttribute('data-theme', theme)
+        const localTheme = localStorage.getItem('lw-theme')
+        if (!localTheme) {
+          if (theme && theme !== 'system') {
+            document.documentElement.setAttribute('data-theme', theme)
+            localStorage.setItem('lw-theme', theme)
+          }
         }
       } else {
         // Create default profile if missing
