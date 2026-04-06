@@ -22,10 +22,13 @@ export function AppearanceSection({ currentTheme, userId, onThemeChange }: Appea
   const supabase = createClient()
 
   const handleThemeChange = async (theme: Theme) => {
-    // Apply immediately
-    document.documentElement.setAttribute('data-theme', theme === 'system' ? '' : theme)
+    // Apply immediately and persist to localStorage for cross-page init
     if (theme === 'system') {
       document.documentElement.removeAttribute('data-theme')
+      localStorage.removeItem('lw-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+      localStorage.setItem('lw-theme', theme)
     }
     onThemeChange(theme)
 
