@@ -105,13 +105,18 @@ export async function PUT(request: Request) {
   }
 
   if (current_week !== undefined && current_week >= 1 && current_week <= 12) {
-    // Season jump: recalculate start_date
-    const jumpDate = seasonJumpStartDate(current_week, timezone)
-    if (!jumpDate) {
-      return Response.json({ error: 'Failed to calculate cycle date' }, { status: 400 })
-    }
     updatePayload.current_week = current_week
-    updatePayload.start_date = jumpDate
+    if (current_week === 1 && start_date) {
+      // Week 1 with explicit start_date: trust it (fresh start from onboarding)
+      updatePayload.start_date = start_date
+    } else {
+      // Season jump: compute start_date aligned to the target week
+      const jumpDate = seasonJumpStartDate(current_week, timezone)
+      if (!jumpDate) {
+        return Response.json({ error: 'Failed to calculate cycle date' }, { status: 400 })
+      }
+      updatePayload.start_date = jumpDate
+    }
   } else if (start_date) {
     updatePayload.start_date = start_date
   }
