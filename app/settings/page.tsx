@@ -103,9 +103,11 @@ export default function SettingsPage() {
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8 text-center space-y-4">
-        <p className="text-[var(--text-secondary)]">{error}</p>
-        <Button variant="secondary" onClick={loadData}>Retry</Button>
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="rounded-xl bg-[var(--status-moderation-bg)] border border-[var(--status-moderation-border)] px-4 py-4 flex flex-col items-center gap-3 text-center">
+          <p className="text-sm text-[var(--status-moderation-text)]">{error}</p>
+          <Button variant="secondary" size="sm" onClick={loadData}>Retry</Button>
+        </div>
       </div>
     )
   }
