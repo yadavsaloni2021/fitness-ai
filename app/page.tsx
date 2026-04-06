@@ -12,6 +12,7 @@ import { WeekCard } from '@/components/home/WeekCard'
 import { FoodSearch } from '@/components/foods/FoodSearch'
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
+import { shouldShowCategoryPrompt, dismissCategoryPrompt } from '@/lib/category-prompt'
 import { logSessionEvent } from '@/lib/analytics'
 import { recordNavigation } from '@/lib/install-prompt'
 import { buildIndex } from '@/lib/food-search'
@@ -34,6 +35,11 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAnonymous, setIsAnonymous] = useState(false)
+  const [categoryPromptTimezone, setCategoryPromptTimezone] = useState('UTC')
+  const [selectedCategory, setSelectedCategory] = useState<number>(2)
+  const [showCategoryPrompt, setShowCategoryPrompt] = useState(false)
+  const [savingCategory, setSavingCategory] = useState(false)
+  const [categoryPromptError, setCategoryPromptError] = useState<string | null>(null)
 
   useEffect(() => {
     recordNavigation()
@@ -46,24 +52,38 @@ export default function HomePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setIsAnonymous(user.is_anonymous ?? false)
-      }
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('timezone')
+          .eq('id', user.id)
+          .single()
+        const timezone = profileData?.timezone ?? 'UTC'
+        setCategoryPromptTimezone(timezone)
+        
+        // Load cycle state
+        const cycleRes = await fetch('/api/cycle')
+        if (cycleRes.status === 401) {
+          router.push('/auth/onboarding')
+          return
+        }
+        if (!cycleRes.ok) throw new Error('Failed to load cycle state')
+        const data = await cycleRes.json()
+        setCycleData(data)
+        if (data.configured) {
+          setSelectedCategory(data.category ?? 2)
+          setShowCategoryPrompt(
+            shouldShowCategoryPrompt(data.computed_week, data.category, timezone)
+          )
+        }
 
-      // Load cycle state
-      const cycleRes = await fetch('/api/cycle')
-      if (cycleRes.status === 401) {
-        router.push('/auth/onboarding')
+        // Log session event
+        const week = data.configured ? data.computed_week : null
+        logSessionEvent('home', week)
+
+        // Load and cache food index
+        await loadFoodIndex()
         return
       }
-      if (!cycleRes.ok) throw new Error('Failed to load cycle state')
-      const data = await cycleRes.json()
-      setCycleData(data)
-
-      // Log session event
-      const week = data.configured ? data.computed_week : null
-      logSessionEvent('home', week)
-
-      // Load and cache food index
-      await loadFoodIndex()
     } catch (err) {
       console.error(err)
       setError('Unable to load your cycle data. Please try again.')
@@ -143,6 +163,35 @@ export default function HomePage() {
   const phase = getPhaseLabel(computed_week)
   const guide = getWeekGuide(computed_week)
 
+  const handleSaveCategory = async () => {
+    setSavingCategory(true)
+    setCategoryPromptError(null)
+    try {
+      const saveRes = await fetch('/api/cycle', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: selectedCategory }),
+      })
+      if (!saveRes.ok) throw new Error('Failed to save category')
+
+      const cycleRes = await fetch('/api/cycle')
+      if (!cycleRes.ok) throw new Error('Failed to refresh cycle')
+      const latestCycleData = await cycleRes.json()
+      setCycleData(latestCycleData)
+      setShowCategoryPrompt(false)
+    } catch (err) {
+      console.error(err)
+      setCategoryPromptError('Unable to save your category. Please try again.')
+    } finally {
+      setSavingCategory(false)
+    }
+  }
+
+  const handleDismissCategory = () => {
+    dismissCategoryPrompt(categoryPromptTimezone)
+    setShowCategoryPrompt(false)
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       {/* Anonymous save-progress banner */}
@@ -168,6 +217,41 @@ export default function HomePage() {
       <div className="flex justify-center">
         <SeasonBadge season={season} week={computed_week} phase={phase} />
       </div>
+
+      {/* Category prompt (Week 9+) */}
+      {showCategoryPrompt && (
+        <div className="rounded-xl bg-[var(--status-moderation-bg)] border border-[var(--status-moderation-border)] px-4 py-3 space-y-3">
+          <p className="text-sm text-[var(--status-moderation-text)]">
+            Your food status now depends on your category. Choose Category 1, 2, or 3.
+          </p>
+          <div className="flex gap-2 items-center">
+            <select
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(parseInt(e.target.value, 10))}
+              className="flex-1 rounded-lg border border-[var(--status-moderation-border)] px-3 py-2 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+              aria-label="Choose category"
+            >
+              <option value={1}>Category 1</option>
+              <option value={2}>Category 2</option>
+              <option value={3}>Category 3</option>
+            </select>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleSaveCategory}
+              loading={savingCategory}
+            >
+              Save
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleDismissCategory}>
+              Dismiss
+            </Button>
+          </div>
+          {categoryPromptError && (
+            <p className="text-xs text-[var(--destructive)]">{categoryPromptError}</p>
+          )}
+        </div>
+      )}
 
       {/* Progress bar */}
       <ProgressBar cycleDay={cycle_day} />

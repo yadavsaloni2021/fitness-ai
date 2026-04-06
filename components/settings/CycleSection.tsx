@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { seasonJumpStartDate } from '@/lib/cycle'
@@ -17,6 +17,12 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [category, setCategory] = useState<number>(cycleState.category ?? 2)
+  const [savingCategory, setSavingCategory] = useState(false)
+
+  useEffect(() => {
+    setCategory(cycleState.category ?? 2)
+  }, [cycleState.category])
 
   const proposedStartDate = useMemo(
     () => seasonJumpStartDate(targetWeek, timezone),
@@ -60,6 +66,30 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
       setError('Failed to update your cycle. Please try again.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleSaveCategory = async () => {
+    setSavingCategory(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/cycle', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update category')
+      }
+
+      onUpdate()
+    } catch (err) {
+      console.error(err)
+      setError('Failed to update your category. Please try again.')
+    } finally {
+      setSavingCategory(false)
     }
   }
 
@@ -115,6 +145,33 @@ export function CycleSection({ cycleState, timezone, onUpdate }: CycleSectionPro
             </Button>
           </div>
         </div>
+
+        {/* Category (Week 9+) */}
+        {cycleState.computed_week >= 9 && (
+          <div className="space-y-2 border-t border-[var(--border-subtle)] pt-4">
+            <label className="text-sm font-medium text-[var(--text-primary)]">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={e => setCategory(parseInt(e.target.value, 10))}
+              className="w-full rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+            >
+              <option value={1}>Category 1</option>
+              <option value={2}>Category 2</option>
+              <option value={3}>Category 3</option>
+            </select>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={handleSaveCategory}
+              loading={savingCategory}
+              disabled={savingCategory || category === cycleState.category}
+            >
+              Save category
+            </Button>
+          </div>
+        )}
 
         {error && (
           <p className="text-sm text-[var(--destructive)]" role="alert">{error}</p>
